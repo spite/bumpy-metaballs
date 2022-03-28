@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Bumpy Metaballs</title>
+    <meta
+      name="viewport"
+      content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0"
+    />
+
+    <meta
+      property="og:url"
+      content="https://www.clicktorelease.com/code/bumpy-metaballs"
+    />
+    <meta property="og:title" content="Bumpy Metaballs" />
+    <meta
+      property="og:description"
+      content="Bumpy Metaballs | Isosurface with Marching Cubes, bump mapping with normal mapping and triplanar mapping, shading with a MatCap shader."
+    />
+    <meta
+      property="og:image"
+      content="https://www.clicktorelease.com/code/bumpy-metaballs/thumb.jpg"
+    />
+    <meta
+      name="description"
+      content="Bumpy Metaballs | Isosurface with Marching Cubes, bump mapping with normal mapping and triplanar mapping, shading with a MatCap shader."
+    />
+    <meta itemprop="name" content="Bumpy Metaballs" />
+    <meta
+      itemprop="description"
+      content="Bumpy Metaballs | Isosurface with Marching Cubes, bump mapping with normal mapping and triplanar mapping, shading with a MatCap shader."
+    />
+    <meta
+      itemprop="image"
+      content="https://www.clicktorelease.com/code/bumpy-metaballs/thumb.jpg"
+    />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        color: #eee;
+        font-family: tahoma;
+        font-size: 13px;
+        margin: 0px;
+        overflow: hidden;
+        line-height: 1.4em;
+        text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+        background-color: #000;
+        width: 100%;
+        height: 100%;
+      }
+      #container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        bottom: 0;
+      }
+      #options {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+      }
+      #options ul {
+        list-style-type: none;
+      }
+      a {
+        color: white;
+        text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+      }
+      #container canvas {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        bottom: 0;
+      }
+      #loading {
+        position: absolute;
+        left: 0;
+        top: 0;
+        right: 0;
+        padding: 10px;
+        color: white;
+        background-color: #b70000;
+        text-align: center;
+        pointer-events: none;
+        -webkit-transition: opacity 250ms ease-out;
+        opacity: 0;
+      }
+      #intro {
+        position: absolute;
+        left: 10px;
+        bottom: 10px;
+      }
+      #intro p {
+        margin-top: 0.7em;
+      }
+      #switch {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        text-align: right;
+      }
+      #fullscreenBtn {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        #intro {
+          display: none;
+        }
+        #switch {
+          left: 10px;
+          top: auto;
+          bottom: 10px;
+          text-align: left;
+        }
+        #fullscreenBtn {
+          display: inline-block;
+        }
+        #goFullscreenText {
+          display: none;
+        }
+      }
+    </style>
+    <link rel="stylesheet" type="text/css" href="buttons.css" media="all" />
+  </head>
+  <body>
+    <div id="fb-root"></div>
+    <script>
+      (function (d, s, id) {
+        var js,
+          fjs = d.getElementsByTagName(s)[0];
+        if (d.getElementById(id)) return;
+        js = d.createElement(s);
+        js.id = id;
+        js.src = "//connect.facebook.net/en_GB/all.js#xfbml=1";
+        fjs.parentNode.insertBefore(js, fjs);
+      })(document, "script", "facebook-jssdk");
+    </script>
+
+    <div id="container"></div>
+    <div id="loading">Loading...</div>
+    <div id="options">
+      <p>
+        <b>Bumpy Metaballs</b> | Click and drag to rotate, mouse wheel to zoom.
+        <span id="goFullscreenText">Double-click to go fullscreen.</span
+        ><a class="button" href="#" id="fullscreenBtn">Go fullscreen</a>
+      </p>
+    </div>
+    <div id="switch">
+      <p>
+        Grossed out? <b>There are more materials!</b><br /><a
+          href="#"
+          id="switchMaterial"
+          class="button"
+          >Try another one!</a
+        >
+      </p>
+    </div>
+    <div id="intro">
+      <p>
+        <b>Isosurface</b> created with <b>Marching Cubes</b>, and bump added
+        with normal mapping.
+      </p>
+      <p>
+        The metaballs don't have generated UV coordinates, and tangents can't
+        be<br />
+        calculated with the usual method because it relies on texture
+        coordinates.
+      </p>
+      <p>
+        Following the triplanar mapping explained in this
+        <a
+          href="http://http.developer.nvidia.com/GPUGems3/gpugems3_ch01.html"
+          rel="external"
+          >GPU Gems 3 article</a
+        >
+        is possible<br />to generate the Tangent Space Basis in the fragment
+        shader.
+      </p>
+      <p>
+        Shading is the same MatCap as
+        <a
+          href="http://www.clicktorelease.com/code/spherical-normal-mapping/"
+          rel="external"
+          >Spherical Environment Mapping</a
+        >.
+      </p>
+      <p>
+        Code by Jaume Sánchez
+        <a href="http://www.twitter.com/thespite" rel="external">@thespite</a>
+        using <a href="http://www.threejs.org" rel="external">three.js</a>.
+      </p>
+      <br />
+      <a
+        href="https://twitter.com/share"
+        class="twitter-share-button"
+        data-via="thespite"
+        data-lang="en"
+        >Tweet</a
+      >
+      <script>
+        !(function (d, s, id) {
+          var js,
+            fjs = d.getElementsByTagName(s)[0];
+          if (!d.getElementById(id)) {
+            js = d.createElement(s);
+            js.id = id;
+            js.src = "https://platform.twitter.com/widgets.js";
+            fjs.parentNode.insertBefore(js, fjs);
+          }
+        })(document, "script", "twitter-wjs");
+      </script>
+
+      <script
+        type="text/javascript"
+        src="https://apis.google.com/js/plusone.js"
+      ></script>
+      <div class="g-plusone" data-size="medium" data-annotation="bubble"></div>
+
+      <div
+        class="fb-like"
+        data-href="http://www.clicktorelease.com/code/bumpy-metaballs/"
+        data-colorscheme="light"
+        data-layout="button_count"
+        data-action="like"
+        data-show-faces="true"
+        data-send="false"
+      ></div>
+    </div>
+
+    <script src="js/Three.js"></script>
+    <script src="js/MarchingCubes.js"></script>
+    <script src="js/Stats.js"></script>
+    <script src="js/ThreeRenderStats.js"></script>
+    <script src="js/ImprovedNoise.js"></script>
+
+    <script type="x-shader/x-vertex" id="sphere-vs">
+
+      void main() {
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+      }
+    </script>
+
+    <script type="x-shader/x-vertex" id="sphere-fs">
+
+      uniform vec2 resolution;
+      uniform float noise;
+      uniform vec3 color;
+
+      #define VIG_REDUCTION_POWER 1.
+      #define VIG_BOOST 1.
+
+      float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}
+
+      void main() {
+
+      	vec2 center = resolution * 0.5;
+      	float vignette = distance( center, gl_FragCoord.xy ) / resolution.x;
+      	vignette = VIG_BOOST - vignette * VIG_REDUCTION_POWER;
+
+      	float n = noise * ( .5 - random( vec3( 1. ), length( gl_FragCoord ) ) );
+
+      	float v = .5 * length( vec2( gl_FragCoord.y / resolution.y, ( 1. - abs( .5 - gl_FragCoord.x / resolution.x ) ) ) );
+      	vec3 base = color;
+      	base += vec3( pow( v, 2. ) );
+      	gl_FragColor = vec4( base * vec3( vignette ) + vec3( n ), 1. );
+
+      }
+    </script>
+
+    <script type="x-shader/x-vertex" id="rim-vs">
+
+      varying vec3 vNormal;
+      varying vec3 vEye;
+
+      void main() {
+
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+
+      	vNormal = normalize( normalMatrix * normal );
+      	vEye = ( modelViewMatrix * vec4( position, 1.0 ) ).xyz;
+
+      }
+    </script>
+
+    <script type="x-shader/x-fragment" id="rim-fs">
+
+      varying vec3 vNormal;
+      varying vec3 vEye;
+
+      void main() {
+
+      	float f = 2. * abs( dot( vNormal, normalize( vEye ) ) );
+      	f = .2 * ( 1. - smoothstep( 0.0, 1., f ) );
+      	gl_FragColor = vec4( 1., 1., 1., f );
+
+      }
+    </script>
+
+    <script type="x-shader/x-vertex" id="vertexShader">
+
+      varying vec3 vNormal;
+         varying vec4 vPosition;
+         varying vec4 vOPosition;
+      varying vec3 vONormal;
+         varying vec3 vU;
+         varying vec3 vEye;
+
+         void main() {
+
+             vOPosition = modelViewMatrix * vec4( position, 1.0 );
+             gl_Position = projectionMatrix * vOPosition;
+
+             vU = normalize( vec3( modelViewMatrix * vec4( position, 1.0 ) ) );
+
+             vPosition = vec4( position, 1.0 );
+             vNormal = normalMatrix * normal;
+             vONormal = normal;
+
+         }
+    </script>
+
+    <script type="x-shader/x-vertex" id="fragmentShader">
+
+      uniform sampler2D textureMap;
+         uniform sampler2D normalMap;
+         uniform vec3 color;
+         uniform float normalScale;
+         uniform float texScale;
+         uniform float useSSS;
+         uniform float useScreen;
+
+         varying vec3 vNormal;
+         varying vec4 vPosition;
+         varying vec4 vOPosition;
+      varying vec3 vONormal;
+      varying vec3 vU;
+         varying vec3 vEye;
+
+      float random(vec3 scale,float seed){return fract(sin(dot(gl_FragCoord.xyz+seed,scale))*43758.5453+seed);}
+
+         void main() {
+
+             vec3 n = normalize( vONormal.xyz );
+             vec3 blend_weights = abs( n );
+             blend_weights = ( blend_weights - 0.2 ) * 7.;
+             blend_weights = max( blend_weights, 0. );
+             blend_weights /= ( blend_weights.x + blend_weights.y + blend_weights.z );
+
+             vec2 coord1 = vPosition.yz * texScale;
+             vec2 coord2 = vPosition.zx * texScale;
+             vec2 coord3 = vPosition.xy * texScale;
+
+             vec3 bump1 = texture2D( normalMap, coord1 ).rgb;
+             vec3 bump2 = texture2D( normalMap, coord2 ).rgb;
+             vec3 bump3 = texture2D( normalMap, coord3 ).rgb;
+
+             vec3 blended_bump = bump1 * blend_weights.xxx +
+                                 bump2 * blend_weights.yyy +
+                                 bump3 * blend_weights.zzz;
+
+             vec3 tanX = vec3( vNormal.x, -vNormal.z, vNormal.y);
+             vec3 tanY = vec3( vNormal.z, vNormal.y, -vNormal.x);
+             vec3 tanZ = vec3(-vNormal.y, vNormal.x, vNormal.z);
+             vec3 blended_tangent = tanX * blend_weights.xxx +
+                                    tanY * blend_weights.yyy +
+                                    tanZ * blend_weights.zzz;
+
+             vec3 normalTex = blended_bump * 2.0 - 1.0;
+             normalTex.xy *= normalScale;
+             normalTex.y *= -1.;
+             normalTex = normalize( normalTex );
+             mat3 tsb = mat3( normalize( blended_tangent ), normalize( cross( vNormal, blended_tangent ) ), normalize( vNormal ) );
+             vec3 finalNormal = tsb * normalTex;
+
+             vec3 r = reflect( normalize( vU ), normalize( finalNormal ) );
+             float m = 2.0 * sqrt( r.x * r.x + r.y * r.y + ( r.z + 1.0 ) * ( r.z + 1.0 ) );
+             vec2 calculatedNormal = vec2( r.x / m + 0.5,  r.y / m + 0.5 );
+
+             vec3 base = texture2D( textureMap, calculatedNormal ).rgb;
+
+      	float rim = 1.75 * max( 0., abs( dot( normalize( vNormal ), normalize( -vOPosition.xyz ) ) ) );
+      	base += useSSS * color * ( 1. - .75 * rim );
+      	base += ( 1. - useSSS ) * 10. * base * color * clamp( 1. - rim, 0., .15 );
+
+      	if( useScreen == 1. ) {
+      		base = vec3( 1. ) - ( vec3( 1. ) - base ) * ( vec3( 1. ) - base );
+      	}
+
+      	float nn = .05 * random( vec3( 1. ), length( gl_FragCoord ) );
+             base += vec3( nn );
+
+             gl_FragColor = vec4( base.rgb, 1. );
+
+         }
+    </script>
+
+    <script>
+      [].slice
+        .call(document.querySelectorAll("a[rel=external]"), 0)
+        .forEach(function (a) {
+          a.addEventListener(
+            "click",
+            function (e) {
+              window.open(this.href, "_blank");
+              e.preventDefault();
+            },
+            false
+          );
+        });
+
+      var rendererStats = new THREEx.RendererStats();
+
+      rendererStats.domElement.style.position = "absolute";
+      rendererStats.domElement.style.left = "0px";
+      rendererStats.domElement.style.bottom = "0px";
+      //document.body.appendChild( rendererStats.domElement )
+
+      var loading = document.getElementById("loading");
+      var container,
+        renderer,
+        scene,
+        camera,
+        mesh,
+        fov = 90,
+        material,
+        sphereMaterial;
+      var start = Date.now();
+      var distance = 300,
+        ndistance = 150;
+
+      window.addEventListener("load", init);
+
+      var texture = 0;
+
+      document
+        .getElementById("switchMaterial")
+        .addEventListener("click", function (e) {
+          switchTexture();
+          e.preventDefault();
+        });
+
+      function switchTexture() {
+        texture++;
+        texture %= 3;
+
+        switch (texture) {
+          case 0:
+            material.uniforms.normalScale.value = 0.5;
+            material.uniforms.texScale.value = 10;
+            material.uniforms.useSSS.value = 0.15;
+            material.uniforms.useScreen.value = 0;
+            material.uniforms.textureMap.value =
+              THREE.ImageUtils.loadTexture("matcap2.jpg");
+            material.uniforms.normalMap.value =
+              THREE.ImageUtils.loadTexture("723-normal.jpg");
+            material.uniforms.color.value.setRGB(18 / 255, 72 / 255, 85 / 255);
+            sphereMaterial.uniforms.color.value.setRGB(
+              18 / 255,
+              72 / 255,
+              85 / 255
+            );
+            break;
+          case 1:
+            material.uniforms.normalScale.value = 1;
+            material.uniforms.texScale.value = 5;
+            material.uniforms.useSSS.value = 1;
+            material.uniforms.useScreen.value = 0;
+            material.uniforms.textureMap.value =
+              THREE.ImageUtils.loadTexture("matcap.jpg");
+            material.uniforms.normalMap.value =
+              THREE.ImageUtils.loadTexture("ice-snow.jpg");
+            material.uniforms.color.value.setRGB(181 / 255, 65 / 255, 52 / 255);
+            sphereMaterial.uniforms.color.value.setRGB(
+              181 / 255,
+              65 / 255,
+              52 / 255
+            );
+            break;
+          case 2:
+            material.uniforms.normalScale.value = 1;
+            material.uniforms.texScale.value = 10;
+            material.uniforms.useSSS.value = 0;
+            material.uniforms.useScreen.value = 1;
+            material.uniforms.textureMap.value = THREE.ImageUtils.loadTexture(
+              "944_large_remake2.jpg"
+            );
+            material.uniforms.normalMap.value =
+              THREE.ImageUtils.loadTexture("carbon-fiber.jpg");
+            material.uniforms.color.value.setRGB(36 / 255, 70 / 255, 106 / 255);
+            sphereMaterial.uniforms.color.value.setRGB(
+              36 / 255,
+              70 / 255,
+              106 / 255
+            );
+            break;
+            break;
+        }
+
+        material.uniforms.textureMap.value.wrapS =
+          material.uniforms.textureMap.value.wrapT = THREE.ClampToEdgeWrapping;
+
+        material.uniforms.normalMap.value.wrapS =
+          material.uniforms.normalMap.value.wrapT = THREE.RepeatWrapping;
+      }
+
+      function init() {
+        container = document.getElementById("container");
+
+        scene = new THREE.Scene();
+        scene.position = new THREE.Vector3(0, 0, 0);
+
+        camera = new THREE.PerspectiveCamera(
+          fov,
+          window.innerWidth / window.innerHeight,
+          0.01,
+          100000
+        );
+        camera.position.z = 100;
+        camera.target = new THREE.Vector3(0, 0, 0);
+
+        scene.add(camera);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.autoClear = false;
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+        renderer.gammaInput = true;
+        renderer.gammaOutput = true;
+        renderer.physicallyBasedShading = true;
+
+        container.appendChild(renderer.domElement);
+
+        container.addEventListener("mousewheel", onMouseWheel, false);
+        container.addEventListener("DOMMouseScroll", onMouseWheel, false);
+        window.addEventListener("resize", onWindowResize, false);
+
+        window.addEventListener("mousedown", onTouchStart);
+        window.addEventListener("touchstart", onTouchStart);
+
+        function onTouchStart(event) {
+          var x, y;
+
+          if (event.changedTouches) {
+            x = event.changedTouches[0].pageX;
+            y = event.changedTouches[0].pageY;
+          } else {
+            x = event.clientX;
+            y = event.clientY;
+          }
+
+          isUserInteracting = true;
+
+          onPointerDownPointerX = x;
+          onPointerDownPointerY = y;
+
+          onPointerDownLon = lon;
+          onPointerDownLat = lat;
+
+          // event.preventDefault();
+        }
+
+        window.addEventListener("mousemove", onTouchMove);
+        window.addEventListener("touchmove", onTouchMove);
+
+        function onTouchMove(event) {
+          if (event.changedTouches) {
+            x = event.changedTouches[0].pageX;
+            y = event.changedTouches[0].pageY;
+          } else {
+            x = event.clientX;
+            y = event.clientY;
+          }
+
+          if (isUserInteracting) {
+            nlon = (x - onPointerDownPointerX) * 0.1 + onPointerDownLon;
+            nlat = (y - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+          }
+
+          mouse.x = (x / window.innerWidth) * 2 - 1;
+          mouse.y = -(y / window.innerHeight) * 2 + 1;
+
+          event.preventDefault();
+        }
+
+        window.addEventListener("mouseup", onTouchEnd);
+        window.addEventListener("touchend", onTouchEnd);
+
+        function onTouchEnd(event) {
+          isUserInteracting = false;
+          event.preventDefault();
+        }
+
+        material = new THREE.ShaderMaterial({
+          uniforms: {
+            textureMap: { type: "t", value: null },
+            normalMap: { type: "t", value: null },
+            normalScale: { type: "f", value: 1 },
+            texScale: { type: "f", value: 5 },
+            useSSS: { type: "f", value: 1 },
+            useScreen: { type: "f", value: 0 },
+            color: { type: "c", value: new THREE.Color(0, 0, 0) },
+          },
+          vertexShader: document.getElementById("vertexShader").textContent,
+          fragmentShader: document.getElementById("fragmentShader").textContent,
+          // side: THREE.DoubleSide,
+          // wireframe: true,
+        });
+
+        resolution = 50;
+        numBlobs = 20;
+
+        effect = new THREE.MarchingCubes(resolution, material, true, false);
+        effect.scale.set(100, 100, 100);
+
+        scene.add(effect);
+
+        updateCubes(effect, 0, numBlobs);
+
+        sphereMaterial = new THREE.ShaderMaterial({
+          uniforms: {
+            resolution: { type: "v2", value: new THREE.Vector2(0, 0) },
+            noise: { type: "f", value: 0.04 },
+            color: { type: "c", value: new THREE.Color(0, 0, 0) },
+          },
+          vertexShader: document.getElementById("sphere-vs").textContent,
+          fragmentShader: document.getElementById("sphere-fs").textContent,
+          side: THREE.BackSide,
+        });
+
+        var sphere = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(3000, 1),
+          sphereMaterial
+        );
+        scene.add(sphere);
+
+        var c = container;
+        function goFullscreen(e) {
+          c.onwebkitfullscreenchange = function (e) {
+            c.onwebkitfullscreenchange = function () {};
+          };
+          c.onmozfullscreenchange = function (e) {
+            c.onmozfullscreenchange = function () {};
+          };
+          if (c.webkitRequestFullScreen) c.webkitRequestFullScreen();
+          if (c.mozRequestFullScreen) c.mozRequestFullScreen();
+          e.preventDefault();
+        }
+
+        document
+          .getElementById("fullscreenBtn")
+          .addEventListener("click", goFullscreen);
+        container.addEventListener("dblclick", goFullscreen);
+
+        switchTexture();
+
+        onWindowResize();
+        render();
+      }
+
+      function updateCubes(object, time, numblobs, floor, wallx, wallz) {
+        object.reset();
+
+        // fill the field with some metaballs
+
+        var i, ballx, bally, ballz, subtract, strength;
+
+        subtract = 12;
+        strength = 1.2 / ((Math.sqrt(numblobs) - 1) / 4 + 1);
+
+        for (i = 0; i < numblobs; i++) {
+          ballx =
+            Math.sin(i + 1.26 * time * (1.03 + 0.5 * Math.cos(0.21 * i))) *
+              0.27 +
+            0.5;
+          bally =
+            Math.cos(i + 1.12 * time * 0.21 * Math.sin(0.72 + 0.83 * i)) *
+              0.27 +
+            0.5;
+          ballz =
+            Math.cos(i + 1.32 * time * 0.1 * Math.sin(0.92 + 0.53 * i)) * 0.27 +
+            0.5;
+
+          object.addBall(ballx, bally, ballz, strength, subtract);
+        }
+
+        if (floor) object.addPlaneY(2, 12);
+        if (wallz) object.addPlaneZ(2, 12);
+        if (wallx) object.addPlaneX(2, 12);
+      }
+
+      function onWindowResize() {
+        var s = 1;
+        renderer.setSize(s * window.innerWidth, s * window.innerHeight);
+        camera.projectionMatrix.makePerspective(
+          fov,
+          window.innerWidth / window.innerHeight,
+          camera.near,
+          camera.far
+        );
+        sphereMaterial.uniforms.resolution.value.set(
+          s * window.innerWidth * window.devicePixelRatio,
+          s * window.innerHeight * window.devicePixelRatio
+        );
+      }
+
+      function onMouseWheel(event) {
+        // WebKit
+
+        var d = 100;
+        if (event.wheelDeltaY) {
+          //fov -= event.wheelDeltaY * 0.01;
+          ndistance -= d * event.wheelDeltaY * 0.001;
+
+          // Opera / Explorer 9
+        } else if (event.wheelDelta) {
+          //fov -= event.wheelDelta * 0.05;
+          ndistance -= d * event.wheelDelta * 0.005;
+
+          // Firefox
+        } else if (event.detail) {
+          //fov += event.detail * 1.0;
+          ndistance += d * event.detail * 0.1;
+        }
+
+        //camera.projectionMatrix.makePerspective( fov, window.innerWidth / window.innerHeight, camera.near, camera.far );
+      }
+
+      var onMouseDownMouseX = 0,
+        onMouseDownMouseY = 0,
+        lon = 0,
+        onMouseDownLon = 0,
+        nlat = 0,
+        lat = 0,
+        onMouseDownLat = 0,
+        nlon = 0,
+        phi = 0,
+        theta = 0;
+      (lat = 15), (isUserInteracting = false);
+
+      function onMouseDown(event) {
+        event.preventDefault();
+
+        isUserInteracting = true;
+
+        onPointerDownPointerX = event.clientX;
+        onPointerDownPointerY = event.clientY;
+
+        onPointerDownLon = lon;
+        onPointerDownLat = lat;
+
+        return;
+
+        var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+        projector.unprojectVector(vector, camera);
+
+        var ray = new THREE.Ray(
+          camera.position,
+          vector.subSelf(camera.position).normalize()
+        );
+
+        var intersects = ray.intersectObjects(scene.children);
+
+        if (intersects.length > 0) {
+          console.log(intersects[0]);
+        }
+      }
+
+      var mouse = { x: 0, y: 0 };
+      var projector;
+
+      function onMouseMove(event) {
+        if (isUserInteracting) {
+          nlon =
+            (event.clientX - onPointerDownPointerX) * 0.1 + onPointerDownLon;
+          nlat =
+            (event.clientY - onPointerDownPointerY) * 0.1 + onPointerDownLat;
+        }
+
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+      }
+
+      function onMouseUp(event) {
+        isUserInteracting = false;
+      }
+
+      var start = Date.now();
+
+      function render() {
+        requestAnimationFrame(render);
+
+        updateCubes(effect, 0.0005 * (Date.now() - start), numBlobs);
+
+        //material.uniforms.time.value = .0001 * ( Date.now() - start );
+
+        nlat = Math.max(-85, Math.min(85, nlat));
+
+        lat += (nlat - lat) * 0.1;
+        lon += (nlon - lon) * 0.1;
+
+        phi = ((90 - lat) * Math.PI) / 180;
+        theta = (lon * Math.PI) / 180;
+
+        distance += (ndistance - distance) * 0.1;
+        camera.position.x =
+          scene.position.x + distance * Math.sin(phi) * Math.cos(theta);
+        camera.position.y = scene.position.y + distance * Math.cos(phi);
+        camera.position.z =
+          scene.position.z + distance * Math.sin(phi) * Math.sin(theta);
+
+        camera.lookAt(scene.position);
+
+        renderer.render(scene, camera);
+        rendererStats.update(renderer);
+      }
+    </script>
+  </body>
+</html>
